@@ -1,0 +1,99 @@
+** New Point **
+__ (Code) __
+-- Explanation --
+
+** This helps to make another socket.io js file at localhost:8000 (If you haven't made the file) **
+__ <script defer src="http://localhost:8000/socket.io/socket.io.js"></script> __
+
+
+************************************ index.js ************************************
+
+                ***** Node Server which will handle socket Connection at 8000 port *****
+__ const io = require("socket.io")(8000, {
+cors: {
+    origin: '*',
+  }
+}); __
+
+                    ***** Creating a users element as an empty srting *****
+__ const users = { } __
+-- Create a users element and keep it blank for the users joined --
+
+                                ***** Connection to the Server *****
+__ io.on('connection', socket => {
+    socket.on('new-user-joined', name => {
+        users[socket.id] = name;
+        socket.broadcast.emit("user-joined", name )
+    }); __
+-- "io.on" will on the server as "connection" and "socket" function is run in which socket is on and "new-user-joined" will be displayed by the name of S/He and the "name" function will run in which id will be taken from socket.id of users which is apparently assigned as name and whenever a new user has joined, it will broadcast the message to everyone with the help of "socket.broadcast.emit"  as user-joined by S/He name.  --   
+
+
+                            ***** Sending Message *****
+__ socket.on("send", message => {
+        socket.broadcast.emit('receive', {message: message , name: users[socket.id]})
+    }); __
+-- When socket is on, take a parameter as send which is apparently inbuilt and run a function as message which will broadcast the message to everyone as "receive" message and by the name of the user which is sending which will be taken as id from the socket. -- 
+
+                            ***** Leaving the Chat *****
+__ socket.on("disconnect", message => {
+        socket.broadcast.emit("left", users[socket.id] )
+        delete users[socket.id]
+    }); __ 
+-- Okay. So when someone left the chat, let everyone know it so, Lets run a "disconnect" thing which is again apparently inbuilt and lets run a function as message, Now this will broadcast everyone that whoever is left has left the chat and it will delete the user from the chat whoever is left with the help of delete function which will take the id from the socket and delete it.  --
+
+
+
+
+************************************ client.js ************************************
+
+                        ***** Making a socket *****
+__ const socket = io("http://localhost:8000") __
+-- To run the content in localhost 8000 port --
+
+                        ***** Targeting Id Elements from index.html *****
+__ const form = document.getElementById("send-container")
+const messageInput = document.getElementById("messageInp")
+const messageContainer = document.querySelector('.container') __
+
+                        ***** Message and Position Concept *****
+__ const append = (message , position) => {
+    const messageElement = document.createElement('div')
+    messageElement.innerText = message
+    messageElement.classList.add('message')
+    messageElement.classList.add(position)
+    messageContainer.append(messageElement)
+} __
+-- Taking message and position as a parameter in append element and running it. In which creating an element as "messageElement" and assigning to it to create another element as "div", Now, whenever this is done, just take the message as innerText of the Page and add a classList as message and position to messageElement which will automatically added to the container element which is messageContainer which targets the container id. --
+
+                        ***** Submit Button *****
+__ form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const message = messageInput.value;
+    append(`You: ${message}`, "right")
+    socket.emit('send', message)
+    messageInput.value = " "
+}) __
+-- Adding a "addEventListener" to the form which will call the function as "submit" and takes a parameter as "e" which will be as preventDefault call. when message is sent , it will be stored in an message element which we created earlier which will apparently store the value of the messageInput. Now we append as ` You:- ${message} , right `as the display and it will be on the right side of the senders side so giving a rigth element too. Now this is targeted by send element which we created in index.js which will apparently show the message with the help of socket.emit. messageInput.value = " " = This will help clearing the textBox after we've sent the message to one another. --
+
+                        ***** Giving a prompt while entering *****
+__ const name = prompt("Enter your name to join..")
+socket.emit("new-user-joined" ,  name) __
+-- This will helps us to give a prompt while someone enters a chat to ask their name as in, in What name they want to be represented. --
+
+                        ***** Broadcasting everyone that Someone joined *****
+__ socket.on('user-joined', name => {
+    append(`${name} joined the Chat`, "right")
+})  __
+-- This will helps us to broadcast everyone that the user has joined. --
+
+                            ***** Broadcasting everyone that the message is received *****
+__ socket.on('receive', data => {
+    append(`${data.name}:-  ${data.message}`, "left")
+})  __
+-- This will help us to broadcast the message to everyone that whatever message is sent to everyone --
+
+                            ***** Broadcasting everyone that the user has left the Chat *****
+__ socket.on('left', name => {
+    append(`${name}: left the chat`, "right")
+})  __
+-- This will help us to broadcast message that the user has left the Chat. --
